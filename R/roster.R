@@ -92,8 +92,11 @@ out_roster <- function(entry, tid, tm, wk, yr, es = FALSE) {
       } else {
         score_dbl[i] <- s$appliedTotal[which_score]
       }
-      which_proj <- which(s$statSourceId == 1 & is_split & is_week)
-      proj_dbl[i] <- s$appliedTotal[which_proj]
+      if (length(which(s$statSourceId == 1 & is_split & is_week)) == 0){
+      } else {      
+        which_proj <- which(s$statSourceId == 1 & is_split & is_week)
+        proj_dbl[i] <- s$appliedTotal[which_proj]
+      }
     } else {
       score_dbl[i] <- s$appliedTotal
       proj_dbl[i] <- NA_real_
