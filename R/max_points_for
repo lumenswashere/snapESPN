@@ -75,6 +75,7 @@ max_starting_roster_score <- function(year_roster, week, roster_id) {
 # @param year
 # @param leg
 # @param current_year
+# @param roster_id
 # @return A df of max scores
 # @export
 
