@@ -1,0 +1,122 @@
+# Convert team_roster to max points for
+#
+# @param year_roster
+# @param week
+# @param roster_id
+# @return A df of max scores
+# @export 
+
+max_starting_roster_score <- function(year_roster, week, roster_id) {
+
+  roster <- year_roster[[roster_id]]
+  # Step 2: Find the number of QBs in the starting roster
+  num_qbs <- sum(roster$lineupSlot == "QB")
+  num_rbs <- sum(roster$lineupSlot == "RB")
+  num_wrs <- sum(roster$lineupSlot == "WR")
+  num_tes <- sum(roster$lineupSlot == "TE")
+  num_flexs <- sum(roster$lineupSlot == "FLEX")
+  num_ks <- sum(roster$lineupSlot == "K")
+  num_dsts <- sum(roster$lineupSlot == "D/ST")
+
+  # Step 3: Get the top N QBs based on the actualScore
+  top_qbs <- roster %>%
+    filter(position == "QB") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_qbs)
+
+  top_rbs <- roster %>%
+    filter(position == "RB") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_rbs)
+
+  top_wrs <- roster %>%
+    filter(position == "WR") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_wrs)
+
+  top_tes <- roster %>%
+    filter(position == "TE") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_tes)
+
+  flex_candidates <- roster %>%
+    filter(position %in% c("RB", "WR", "TE")) %>%
+    filter(!playerId %in% c(top_rbs$playerId, top_wrs$playerId, top_tes$playerId)) %>%
+    arrange(desc(actualScore))
+
+  top_flexs <- head(flex_candidates, num_flexs)
+
+  top_ks <- roster %>%
+    filter(position == "K") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_ks)
+
+  top_dsts <- roster %>%
+    filter(position == "D/ST") %>%
+    arrange(desc(actualScore)) %>%
+    head(num_dsts)
+
+  # Step 4: Calculate the total score for the top QBs
+  qb_score <- sum(top_qbs$actualScore, na.rm = TRUE)
+  rb_score <- sum(top_rbs$actualScore, na.rm = TRUE)
+  wr_score <- sum(top_wrs$actualScore, na.rm = TRUE)
+  te_score <- sum(top_tes$actualScore, na.rm = TRUE)
+  flex_score <- sum(top_flexs$actualScore, na.rm = TRUE)
+  k_score <- sum(top_ks$actualScore, na.rm = TRUE)
+  dst_score <- sum(top_dsts$actualScore, na.rm = TRUE)
+
+  total_score <- sum(qb_score, rb_score, wr_score, te_score, flex_score, k_score, dst_score)
+
+  return(total_score)
+}
+
+# Convert team_roster to max points for
+#
+# @param year
+# @param leg
+# @param current_year
+# @return A df of max scores
+# @export
+
+max_points_for <- function(year, leg, current_year) {
+
+
+  # Determine the range of weeks to iterate over
+  week_range <- if (year == current_year) 1:Leg else 1:17
+
+  # Initialize a list to store the total scores for each week across all teams
+  weekly_scores <- list()
+
+  # Iterate over each week in the season
+  for (week in week_range) {
+
+    week_scores <- c()  # Initialize a vector to store the scores for all teams for the current week
+
+    # Get the year roster based on league history
+    if (year == current_year) {
+      year_roster <- team_roster(scoringPeriodId = week)
+    } else {
+      year_roster <- team_roster(leagueHistory = TRUE, scoringPeriodId = week)
+      year_roster <- year_roster[[as.character(year)]]
+    }
+    # Loop through all teams in the league (assuming 12 teams)
+    for (roster_id in 1:12) {
+      # Calculate the max starting roster score for this team for the current week
+      score <- max_starting_roster_score(year_roster, week, roster_id)
+
+      # Add the week's score to the list of week scores
+      week_scores <- c(week_scores, score)
+    }
+
+    # Store the total scores for the current week across all teams
+    weekly_scores[[paste0("Week_", week)]] <- week_scores
+  }
+
+  # Convert the list of weekly scores into a data frame with one column per week
+  scores_df <- data.frame(do.call(cbind, weekly_scores))
+  names(scores_df) <- paste0("Week_", week_range)  # Name the columns
+  scores_df$ppts_total <- rowSums(scores_df)
+
+  # Return the final data frame
+  return(scores_df)
+}
