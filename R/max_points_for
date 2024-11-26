@@ -1,10 +1,10 @@
-# Convert team_roster to max points for
-#
-# @param year_roster
-# @param week
-# @param roster_id
-# @return A df of max scores
-# @export 
+#' Convert team_roster to max points for
+#'
+#' @param year_roster
+#' @param week
+#' @param roster_id
+#' @return A df of max scores
+#' @export 
 
 max_starting_roster_score <- function(year_roster, week, roster_id) {
 
